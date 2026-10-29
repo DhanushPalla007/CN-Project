@@ -1,0 +1,4 @@
+# Tested target: Ubuntu 20.04 / Python 3.8, Mininet 2.3, Open vSwitch, iperf (v2)
+ryu==4.34
+eventlet==0.30.2
+matplotlib

@@ -1,0 +1,12 @@
+[
+ {"q":"Why does the exam server put a length prefix in front of every TCP message?","options":["To encrypt the message","Because TCP is a byte stream with no message boundaries","To make UDP faster","To count the students"],"answer":1},
+ {"q":"Which socket call does the server use to wait for an incoming student connection?","options":["bind()","listen()","accept()","connect()"],"answer":2},
+ {"q":"Why is the exam timer kept on the server and not on the student's computer?","options":["Browsers cannot count seconds","It saves bandwidth","TCP requires it","A student cannot gain time by changing their own clock"],"answer":3},
+ {"q":"In our controller, what does a switch do with a packet that matches no flow entry (table-miss)?","options":["Sends it to the controller as a Packet-In","Drops it silently","Sends it back to the sender","Sends it to the exam server"],"answer":0},
+ {"q":"In SDN, which component makes the forwarding decisions centrally?","options":["The student client","The controller (control plane)","The switch ASIC","The DNS server"],"answer":1},
+ {"q":"What is Mininet used for in this project?","options":["Writing the exam questions","Scoring the answers","Emulating virtual hosts, switches and links on one machine","Encrypting TCP traffic"],"answer":2},
+ {"q":"How does the exam server tell the controller about an unauthorized login?","options":["A UDP event message (UNAUTHORIZED) that triggers a drop rule","An email to the administrator","It prints a line on the console","It edits the question file"],"answer":0},
+ {"q":"Why is the s1-s4 link limited to 10 Mbps and loaded with UDP background traffic?","options":["To speed up scoring","To save disk space","To hide the exam server","To create congestion and test how exam traffic behaves"],"answer":3},
+ {"q":"When several flow entries match a packet, which one does an OpenFlow switch use?","options":["The oldest one","The one with the highest priority","The one with the most bytes","A random one"],"answer":1},
+ {"q":"What does Jain's fairness index equal when every student gets exactly the same service?","options":["0","0.5","1","The number of students"],"answer":2}
+]

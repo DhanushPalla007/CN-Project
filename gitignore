@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+.vscode/
+# keep only curated results in the repository
+results/*
+!results/.gitkeep
+!results/plots/
+!results/summary_table.md
+!results/summary_table.csv
+!results/summary.csv

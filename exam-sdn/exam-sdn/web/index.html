@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Online Examination</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--tx:#1b2433;--mut:#5b6678;--pri:#1f3a5f;--onpri:#fff;--ok:#1a7f4b;--bad:#b3261e;--bd:#d5dbe5}
+@media(prefers-color-scheme:dark){:root{--bg:#10151d;--card:#18202c;--tx:#e8edf5;--mut:#9aa6b8;--pri:#6fa3e8;--onpri:#0b1220;--ok:#52c488;--bad:#f2837b;--bd:#2c3748}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,Segoe UI,Arial,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:14px}
+h1{font-size:22px;margin:4px 0 8px}p.m{color:var(--mut);margin:4px 0}label{display:block;margin:12px 0 4px;font-weight:600}
+input[type=text]{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+button{padding:10px 18px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
+button.p{background:var(--pri);color:var(--onpri);border-color:var(--pri);font-weight:600}button:disabled{opacity:.5}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}#timer{font:700 24px ui-monospace,monospace}#timer.low{color:var(--bad)}
+.opt{display:block;padding:10px 12px;margin:8px 0;border:1px solid var(--bd);border-radius:8px;cursor:pointer}.opt.sel{border-color:var(--pri);background:color-mix(in srgb,var(--pri) 14%,transparent)}
+#pal{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}#pal button{width:38px;padding:6px 0}#pal .a{background:var(--pri);color:var(--onpri)}#pal .c{outline:2px solid var(--tx)}
+.err{color:var(--bad);margin-top:10px}.score{font-size:42px;font-weight:700}table{width:100%;border-collapse:collapse;font-size:14px}td,th{border-bottom:1px solid var(--bd);padding:6px;text-align:left;vertical-align:top}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.nav{display:flex;justify-content:space-between;gap:8px;margin-top:14px}[hidden]{display:none!important}
+</style></head><body><main>
+<section id="s1" class="card"><h1>Online Examination Network</h1><p class="m">10 questions &middot; 15 minutes &middot; answers travel over TCP sockets across an SDN-managed network.</p>
+<label for="sid">Student ID</label><input type="text" id="sid" maxlength="20" autocomplete="off" placeholder="e.g. S001">
+<label for="nm">Full name</label><input type="text" id="nm" maxlength="60" autocomplete="off">
+<p class="m">The 15-minute timer starts when you press Start. When it ends, your answers are submitted automatically.</p>
+<p><button class="p" id="go">Start exam</button></p><div id="e1" class="err"></div></section>
+<section id="s2" hidden><div class="card"><div class="top"><div><b id="who"></b><div class="m" id="prog"></div></div><div id="timer">15:00</div></div><div id="pal"></div></div>
+<div class="card"><h1 id="qt"></h1><div id="opts"></div><div id="e2" class="err"></div>
+<div class="nav"><button id="prev">Previous</button><button id="next">Next</button><button class="p" id="sub">Submit exam</button></div></div></section>
+<section id="s3" class="card" hidden><h1>Result</h1><p class="m" id="rwho"></p><div class="score" id="rs"></div><p class="m" id="rn"></p>
+<div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Question</th><th>Your answer</th><th>Correct answer</th><th></th></tr></thead><tbody id="rv"></tbody></table></div></section>
+</main><script>
+const $=s=>document.getElementById(s);let T,N=10,Q=0,left=900,ans=new Set,busy=false,iv,sy=0,fin=false;
+async function api(p,b){try{const r=await fetch(p,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:undefined);return await r.json()}catch(e){return{error:'Network error. Check the connection.'}}}
+const show=n=>['s1','s2','s3'].forEach((s,i)=>$(s).hidden=i!=n);
+$('go').onclick=async()=>{$('e1').textContent='';$('go').disabled=true;
+ const d=await api('/api/login',{student_id:$('sid').value,name:$('nm').value});$('go').disabled=false;
+ if(d.error){$('e1').textContent=d.error==='unauthorized'?'This Student ID is not registered for the exam.':d.error;return}
+ if(d.done)return result(d.result);
+ T=d.token;N=d.num_questions;left=d.remaining;ans=new Set(d.answered);$('who').textContent=d.name+' ('+$('sid').value.trim()+')';show(1);pal();load(0);
+ iv=setInterval(tick,1000)};
+function tick(){if(fin)return;left=Math.max(0,left-1);const m=Math.floor(left/60),s=left%60;$('timer').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');$('timer').classList.toggle('low',left<=60);
+ if(left<=0)return submit(true);if(++sy>=10){sy=0;api('/api/time?token='+T).then(d=>{if(d.done)result(d.result);else if(d.remaining!=null)left=Math.round(d.remaining)})}}
+function pal(){$('pal').innerHTML='';for(let i=0;i<N;i++){const b=document.createElement('button');b.textContent=i+1;b.className=(ans.has(i)?'a ':'')+(i==Q?'c':'');b.onclick=()=>load(i);$('pal').append(b)}$('prog').textContent='Answered '+ans.size+' of '+N}
+async function load(i){if(busy)return;busy=true;$('e2').textContent='';const d=await api('/api/question?token='+T+'&index='+i);busy=false;
+ if(d.done)return result(d.result);if(d.error){$('e2').textContent=d.error;return}
+ Q=i;left=Math.round(d.remaining);$('qt').textContent=(i+1)+'. '+d.text;$('opts').innerHTML='';
+ d.options.forEach((o,j)=>{const l=document.createElement('label');l.className='opt'+(d.chosen===j?' sel':'');const r=document.createElement('input');r.type='radio';r.name='o';r.checked=d.chosen===j;r.onchange=()=>pick(j);l.append(r,' '+o);$('opts').append(l)});
+ $('prev').disabled=i==0;$('next').disabled=i==N-1;pal()}
+async function pick(j){const d=await api('/api/answer',{token:T,index:Q,choice:j});if(d.done)return result(d.result);if(d.error){$('e2').textContent=d.error;return}
+ ans.add(Q);[...$('opts').children].forEach((l,k)=>l.classList.toggle('sel',k==j));pal()}
+$('prev').onclick=()=>load(Q-1);$('next').onclick=()=>load(Q+1);
+$('sub').onclick=()=>{const n=N-ans.size;if(confirm(n?'You have '+n+' unanswered question(s). Submit anyway?':'Submit your exam now?'))submit(false)};
+async function submit(auto){if(fin)return;const d=await api('/api/submit',{token:T});if(d.error){$('e2').textContent=d.error;return}result(d.result)}
+function result(r){fin=true;clearInterval(iv);show(2);$('rwho').textContent=$('who').textContent;$('rs').textContent=r.score+' / '+r.total+'  ('+Math.round(100*r.score/r.total)+'%)';
+ $('rn').textContent=r.auto_submitted?'Time ran out, so your answers were submitted automatically.':'Submitted. Your score was calculated by the exam server.';
+ $('rv').innerHTML='';r.review.forEach(v=>{const tr=document.createElement('tr'),ok=v.chosen===v.correct;
+  [v.index+1,v.text,v.chosen==null?'Not answered':v.options[v.chosen],v.options[v.correct],ok?'Correct':'Wrong'].forEach((c,k)=>{const td=document.createElement('td');td.textContent=c;if(k==4)td.className=ok?'ok':'bad';tr.append(td)});$('rv').append(tr)})}
+</script></body></html>
